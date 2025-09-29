@@ -35,3 +35,13 @@ AIRFLOW_EXECUTOR=LocalExecutor
 AIRFLOW_IMAGE=stroll-airflow
 AIRFLOW_PORT=5000
 ```
+
+### chrome 설치
+
+https://storage.googleapis.com/chrome-for-testing-public/140.0.7339.207/linux64/chromedriver-linux64.zip
+https://storage.googleapis.com/chrome-for-testing-public/140.0.7339.207/linux64/chrome-linux64.zip
+
+1. 위 두 링크에서 설치 후 압축 해제
+2. ./chrome에 복사
+
+(https://googlechromelabs.github.io/chrome-for-testing/#stable)
