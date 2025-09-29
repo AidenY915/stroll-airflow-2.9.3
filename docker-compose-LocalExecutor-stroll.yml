@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    logging:
+      options: { max-size: "10m", max-file: "3" }
+
+  # 1회성 DB 초기화 잡
+  airflow-init:
+    image: stroll-airflow
+    depends_on: [postgres]
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    command: >
+      bash -lc "
+        airflow db init &&
+        airflow users create --username ${AIRFLOW_USER} --password ${AIRFLOW_PASSWORD} --firstname Admin --lastname User --role Admin --email admin@example.com"
+    restart: "no"
+    volumes:
+      - ./dags:/opt/airflow/dags:ro
+
+  scheduler:
+    image: stroll-airflow
+    depends_on: [postgres]
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    command: ["airflow","scheduler"]
+    logging:
+      options: { max-size: "10m", max-file: "3" }
+    volumes:
+      - ./dags:/opt/airflow/dags:ro
+
+  webserver:
+    image: stroll-airflow
+    depends_on: [scheduler]
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__WEBSERVER__AUTHENTICATE=True
+
+    command: ["airflow","webserver"]
+    ports: ["5000:8080"]
+    logging:
+      options: { max-size: "10m", max-file: "3" }
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /opt/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+    volumes:
+      - ./dags:/opt/airflow/dags:ro

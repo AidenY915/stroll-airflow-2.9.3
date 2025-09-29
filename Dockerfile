@@ -1,0 +1,16 @@
+# base: Airflow 공식 slim 이미지 (Py 3.12)
+FROM apache/airflow:slim-2.9.3-python3.12
+
+# Airflow 컨테이너는 기본 USER가 airflow이므로 그대로 사용
+USER airflow
+
+# 필요한 파이썬 패키지만 설치
+RUN pip install --no-cache-dir \
+      selenium \
+      pymysql \
+      requests \
+      python-dotenv \
+      psycopg2-binary
+
+# 작업 디렉터리
+WORKDIR /opt/airflow
