@@ -34,6 +34,7 @@ POSTGRES_DB=airflow
 AIRFLOW_EXECUTOR=LocalExecutor
 AIRFLOW_IMAGE=stroll-airflow
 AIRFLOW_PORT=5000
+AIRFLOW__WEBSERVER__SECRET_KEY=abcd
 ```
 
 ###dags/stroll/crawl/.env 예시
@@ -65,3 +66,17 @@ https://storage.googleapis.com/chrome-for-testing-public/140.0.7339.207/linux64/
 2. .dags/crawl/chrome에 복사
 
 (https://googlechromelabs.github.io/chrome-for-testing/#stable)
+
+### logs 권한 변경
+
+```
+sudo chown -R 50000:0 logs
+sudo chmod -R 775 logs
+```
+
+### chromedriver 권한
+
+```
+chmod +x dags/stroll/crawl/chrome/chromedriver-linux64/chromedriver
+chmod +x dags/stroll/crawl/chrome/chrome-linux64/chrome
+```

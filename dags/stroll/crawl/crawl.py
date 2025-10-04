@@ -35,7 +35,7 @@ def init():
 
     # 옵션 설정
     options = Options()
-    # options.add_argument("--headless")             # 브라우저 창 없이 실행
+    options.add_argument("--headless")             # 브라우저 창 없이 실행
     options.add_argument("--no-sandbox")            # 보안 옵션 끔 (리눅스 환경 대비용)
     options.add_argument("--disable-dev-shm-usage") # 메모리 부족 방지
     options.binary_location = CHROME_PATH
