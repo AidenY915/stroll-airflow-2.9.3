@@ -29,23 +29,24 @@ def send_place_to_api(place_obj):
     address = place_obj["address"]
     # images = place_obj["images"]
 
-    try :
-        url = CRUD_API_URL + "/api/place"
-        print(url, "in send_place_to_api")
-        headers = {
+    url = CRUD_API_URL + "/api/place"
+    print(url, "in send_place_to_api")
+    headers = {
             "Authorization": f"Bearer {access_token}"
-        }
-        data = {
-            "placeName": place_name,
-            "category": category,
-            "address": address,
-            "detailAddress": detail_address,
-            "content": "",
-        }
+    }
+    data = {
+        "placeName": place_name,
+        "category": category,
+        "address": address,
+        "detailAddress": detail_address,
+        "content": "",
+    }
+    try :   
         response = requests.post(url, headers=headers, data=data, files=None)
+        response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print(f"Place 전송 중 오류 발생: {e}")
         access_token = get_access_token()
-        return send_place_to_api(place_obj)
+        response = requests.post(url, headers=headers, data=data, files=None)
     print(response , place_obj, "in send_place_to_api")
     return response.json()

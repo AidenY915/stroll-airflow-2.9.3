@@ -9,6 +9,8 @@ services:
       - ./postgres_data:/var/lib/postgresql/data
     logging:
       options: { max-size: "10m", max-file: "3" }
+    networks:
+      - stroll-network
 
   # 1회성 DB 초기화 잡
   airflow-init:
@@ -25,6 +27,8 @@ services:
     volumes:
       - ./dags:/opt/airflow/dags:ro
       - ./logs:/opt/airflow/logs
+    networks:
+      - stroll-network
 
   scheduler:
     image: stroll-airflow
@@ -44,6 +48,8 @@ services:
     volumes:
       - ./dags:/opt/airflow/dags:ro
       - ./logs:/opt/airflow/logs
+    networks:
+      - stroll-network
 
   webserver:
     image: stroll-airflow
@@ -68,3 +74,10 @@ services:
     volumes:
       - ./dags:/opt/airflow/dags:ro
       - ./logs:/opt/airflow/logs
+    networks:
+      - stroll-network
+
+networks:
+  stroll-network:
+    driver: bridge
+    external: true

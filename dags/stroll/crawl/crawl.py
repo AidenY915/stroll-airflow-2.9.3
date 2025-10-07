@@ -28,16 +28,31 @@ def init():
     load_dotenv(DIRECTORY_PATH + os.sep + '.env', override=True)
     
 
-    CHROMEDRIVER_PATH = DIRECTORY_PATH + os.sep + os.getenv("CHROMEDRIVER_PATH")
-    CHROME_PATH = DIRECTORY_PATH + os.sep + os.getenv("CHROME_PATH")
+    if(os.name=='posix'): # 리눅스 환경
+        CHROME_PATH = os.getenv("CHROME_PATH")
+        CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH")
+    else:
+        CHROME_PATH = DIRECTORY_PATH + os.sep + os.getenv("CHROME_PATH")
+        CHROMEDRIVER_PATH = DIRECTORY_PATH + os.sep + os.getenv("CHROMEDRIVER_PATH")
+
+    print(DIRECTORY_PATH)
     print(CHROME_PATH)
     print(CHROMEDRIVER_PATH)
-
+    
+    os.environ["XDG_RUNTIME_DIR"] = "/tmp"
     # 옵션 설정
     options = Options()
-    options.add_argument("--headless")             # 브라우저 창 없이 실행
-    options.add_argument("--no-sandbox")            # 보안 옵션 끔 (리눅스 환경 대비용)
-    options.add_argument("--disable-dev-shm-usage") # 메모리 부족 방지
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--remote-debugging-port=9222")
+    options.add_argument("--user-data-dir=/tmp/chrome-user-data")
+    options.add_argument("--data-path=/tmp/chrome-data")
+    options.add_argument("--disk-cache-dir=/tmp/chrome-cache")
+    options.add_argument("--disable-gpu")          # GPU 없는 환경에서 안전장치
+    options.add_argument("--disable-software-rasterizer")
+    options.add_argument("--no-first-run")
+    options.add_argument("--no-default-browser-check")
     options.binary_location = CHROME_PATH
     # 드라이버 경로 설정 (chromedriver.exe 위치에 맞게 수정) 
     service = Service(executable_path=CHROMEDRIVER_PATH)
