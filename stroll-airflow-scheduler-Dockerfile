@@ -1,0 +1,37 @@
+# base: Airflow 공식 slim 이미지 (Py 3.12)
+FROM apache/airflow:slim-2.9.3-python3.12
+
+USER root
+#Chrome을 실행을 위한 라이브러리 설치
+RUN apt-get update && apt-get install -y \
+    libglib2.0-0 libnss3 libasound2 libatk-bridge2.0-0 libgtk-3-0 \
+    libcups2 libdrm2 libx11-xcb1 libxcb1 libxcomposite1 libxdamage1 \
+    libxfixes3 libxrandr2 libgbm1 libxshmfence1 fonts-liberation \
+    ca-certificates wget unzip && rm -rf /var/lib/apt/lists/*
+
+# Chrome for Testing & Chromedriver (버전은 맞춰서 변경)
+RUN wget -O /tmp/chrome.zip https://storage.googleapis.com/chrome-for-testing-public/141.0.7390.54/linux64/chrome-linux64.zip && \
+    unzip /tmp/chrome.zip -d /opt && \
+#바로가기 생성
+    ln -s /opt/chrome-linux64/chrome /usr/local/bin/chrome && \
+# /opt/chrome-linux64/chrome
+    wget -O /tmp/chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/141.0.7390.54/linux64/chromedriver-linux64.zip && \
+    unzip /tmp/chromedriver.zip -d /usr/local/bin && \ 
+# /usr/local/bin/chromedriver-linux64/chromedriver
+# 기본 path에 chrome 바로가기와 chromedriver를 생성
+    mv /usr/local/bin/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
+    chmod +x /usr/local/bin/chromedriver /usr/local/bin/chrome
+
+# Airflow 컨테이너는 기본 USER가 airflow이므로 그대로 사용
+USER airflow
+
+# 필요한 파이썬 패키지만 설치
+RUN pip install --no-cache-dir \
+      selenium \
+      pymysql \
+      requests \
+      python-dotenv \
+      psycopg2-binary
+
+# 작업 디렉터리
+WORKDIR /opt/airflow
