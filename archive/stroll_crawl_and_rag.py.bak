@@ -1,0 +1,93 @@
+"""
+Stroll 크롤링 및 주소 변환 DAG
+Naver 지도에서 장소 데이터를 크롤링하고, 각 장소별로 주소를 변환한 후 API로 전송합니다.
+Dynamic Task Mapping을 사용하여 각 장소를 독립적으로 처리합니다.
+"""
+from airflow import DAG
+from airflow.decorators import task
+from datetime import datetime, timedelta
+from stroll.crawl.crawl import crawl
+from stroll.crawl.process_place import process_single_place
+
+default_args = {
+    "owner": "airflow",
+    "depends_on_past": False,
+    "start_date": datetime(2025, 10, 6),
+    "email": ["airflow@airflow.com"],
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "retries": 2,  # 개별 장소 처리 실패 시 2번 재시도
+    "retry_delay": timedelta(minutes=1),
+}
+
+with DAG(
+    dag_id="crawl_and_rag",
+    default_args=default_args,
+    schedule_interval=timedelta(days=1),
+    catchup=False,
+    tags=["stroll", "crawl", "naver", "dynamic-mapping"],
+    description="네이버 지도 크롤링 및 동적 장소 처리 파이프라인 (Dynamic Task Mapping)",
+    max_active_tasks=10,  # 동시 처리 최대 10개 장소
+) as dag:
+    
+    @task(task_id="crawl_places")
+    def crawl_task():
+        """
+        네이버 지도에서 모든 장소 데이터를 크롤링합니다.
+        Returns: 장소 객체 리스트 [{"placeName": ..., "category": ..., "address": ...}, ...]
+        """
+        return crawl(None)
+    
+    @task(task_id="process_place")
+    def process_place_task(place_obj: dict):
+        """
+        단일 장소를 처리합니다: 주소 변환 + API 전송
+        각 장소가 독립적인 Task로 실행되며, 실패 시 개별적으로 재시도됩니다.
+        
+        Args:
+            place_obj: 크롤링된 장소 데이터
+        Returns:
+            처리 결과 {"status": "success"/"failed", "placeName": ..., ...}
+        """
+        return process_single_place(place_obj)
+    
+    @task(task_id="summarize_results")
+    def summarize_task(results: list):
+        """
+        모든 장소 처리 결과를 요약합니다.
+        
+        Args:
+            results: 각 장소 처리 결과 리스트
+        """
+        success_count = sum(1 for r in results if r.get("status") == "success")
+        fail_count = sum(1 for r in results if r.get("status") == "failed")
+        
+        print("\n" + "="*50)
+        print("📊 최종 처리 결과 요약")
+        print("="*50)
+        print(f"✓ 성공: {success_count}개")
+        print(f"✗ 실패: {fail_count}개")
+        print(f"📍 총 처리: {len(results)}개")
+        
+        if fail_count > 0:
+            print("\n실패한 장소 목록:")
+            for r in results:
+                if r.get("status") == "failed":
+                    print(f"  - {r.get('placeName', 'Unknown')}: {r.get('error', 'Unknown error')}")
+        
+        return {
+            "total": len(results),
+            "success": success_count,
+            "failed": fail_count
+        }
+    
+    # Task 의존성 정의 with Dynamic Task Mapping
+    # 1. 모든 장소 크롤링
+    places = crawl_task()
+    
+    # 2. 각 장소를 독립적인 Task로 처리 (Dynamic Mapping)
+    # expand()를 사용하여 각 place_obj마다 별도의 Task 생성
+    process_results = process_place_task.expand(place_obj=places)
+    
+    # 3. 모든 처리 결과 요약
+    summarize_task(process_results)

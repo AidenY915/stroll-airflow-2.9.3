@@ -25,8 +25,17 @@ sftp-config.json
 # Python
 __pycache__
 
-*.env
+.env
+dags/stroll/.env
 *.Zone.Identifier
+
+
+logs/*
+!logs/.gitkeep
+postgres/*
+!postgres/.gitkeep
+dags/stroll/crawl/tmp/*
+!dags/stroll/crawl/tmp/.gitkeep
 
 dags/stroll/crawl/chrome/**
 !dags/stroll/crawl/chrome/.gitkeep

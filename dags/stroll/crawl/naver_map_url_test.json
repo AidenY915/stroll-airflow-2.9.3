@@ -1,0 +1,12 @@
+{
+  "base_url": "https://map.naver.com/p/search/",
+  "url_template": "https://map.naver.com/p/search/{location} {keyword}",
+  "locations": [
+    {
+      "name": "강남구"
+    }
+  ],
+  "queries": {
+    "숙박": ["강아지"]
+  }
+}

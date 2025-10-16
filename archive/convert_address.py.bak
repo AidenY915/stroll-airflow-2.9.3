@@ -1,0 +1,87 @@
+from stroll.crawl.send_to_stroll_api import send_place_to_api
+import requests
+import re
+import os
+from dotenv import load_dotenv
+import json
+
+DIRECTORY_PATH = __file__[0:__file__.rfind(os.sep)]
+load_dotenv(DIRECTORY_PATH + os.sep + '.env', override=True)
+KAKAO_API_KEY = os.getenv("KAKAO_API_KEY")
+
+def convert_to_road_address(addr):
+    """카카오 API를 사용하여 지번 주소를 도로명 주소로 변환합니다."""
+    url = f"https://dapi.kakao.com/v2/local/search/address.json?query={addr}"
+    headers = {
+        "Authorization": f"KakaoAK {KAKAO_API_KEY}"
+    }
+
+    try:
+        res = requests.get(url, headers=headers)
+        data = res.json()
+        
+        # documents 리스트에서 첫 번째 결과 추출
+        documents = data.get("documents", [])
+        if not documents:
+            return None # 검색 결과 없음
+
+        first = documents[0]
+
+        # 도로명 주소 우선, 없으면 지번 주소
+        if first.get("road_address"):
+            return first["road_address"].get("address_name")
+        elif first.get("address"):
+            return first["address"].get("address_name")
+        else:
+            return None
+    except Exception as e:
+        print(f"주소 변환 중 오류 발생: {e}")
+        return None, None, None
+
+
+def strip_detail_address(addr):
+    """주소에서 기본 주소(도로명 + 건물번호)만 추출합니다."""
+    match = re.search(r'^([\w\s가-힣·\-]+?\s\d+(-\d+)?)(?=\s|$)', addr)
+    return match.group(1) if match else addr
+
+def extract_detail_address(addr):
+    """주소에서 상세주소(층, 호수 등)를 추출합니다."""
+    # 도로명 + 건물번호까지만 매칭
+    match = re.search(r'^([\w\s가-힣·\-]+?\s\d+(-\d+)?)(?=\s|$)', addr)
+    if match:
+        base_addr = match.group(1)
+        detail = addr.replace(base_addr, '', 1).strip()
+        return detail
+    return ""  # 못 찾으면 상세주소도 없다고 판단
+
+
+def export_ndjson(place_obj_list_after_convert):
+    """변환된 장소 데이터를 NDJSON 파일로 저장합니다."""
+    with open(DIRECTORY_PATH + "/tmp/place_obj_list_after_convert.ndjson", 'w', encoding='utf-8') as f:
+        for place_obj in place_obj_list_after_convert:
+            f.write(json.dumps(place_obj, ensure_ascii=False) + '\n')
+
+def import_ndjson():
+    """크롤링된 장소 데이터를 NDJSON 파일에서 불러옵니다."""
+    place_obj_list = []
+    with open(DIRECTORY_PATH + "/tmp/place_obj_list.ndjson", 'r', encoding='utf-8') as f:
+        for line in f:
+            place_obj = json.loads(line)
+            place_obj_list.append(place_obj)
+    return place_obj_list
+
+def convert_address(ti=None, **context):
+    """크롤링된 주소를 도로명 주소로 변환하고 상세주소를 추출합니다."""
+    place_obj_list = import_ndjson()
+    place_obj_list_after_convert = []
+    for place_obj in place_obj_list:
+        address = place_obj["address"]
+        detail_address = extract_detail_address(address)
+        rest_address = strip_detail_address(address)
+        road_address = convert_to_road_address(rest_address)
+        if road_address is None:
+            raise Exception("주소 변환 실패, or 카카오 API 인증 실패(IP or API key)")
+        place_obj["detailAddress"] = detail_address
+        place_obj["address"] = road_address
+        place_obj_list_after_convert.append(place_obj)
+    export_ndjson(place_obj_list_after_convert)

@@ -1,0 +1,79 @@
+import requests
+import os
+from dotenv import load_dotenv
+import json
+
+DIRECTORY_PATH = __file__[0:__file__.rfind(os.sep)]
+load_dotenv(DIRECTORY_PATH + os.sep + '.env', override=True)
+CRUD_API_URL = os.getenv("CRUD_API_URL")
+CRUD_API_ID = os.getenv("CRUD_API_ID")
+CRUD_API_PASSWORD = os.getenv("CRUD_API_PASSWORD")
+
+
+def get_access_token():
+    """Stroll API에서 액세스 토큰을 발급받습니다."""
+    url = CRUD_API_URL + "/api/auth/login"
+    body = { "userId" : CRUD_API_ID, "password" : CRUD_API_PASSWORD }
+    response = requests.post(url, json=body)
+    access_token = response.json()["accessToken"]
+    print(f"액세스 토큰 발급 완료: {CRUD_API_ID}")
+    return access_token
+
+access_token = get_access_token()
+
+def send_place_to_api(place_obj):
+    """장소 데이터를 Stroll API로 전송합니다."""
+    global access_token
+    place_name = place_obj["placeName"]
+    category = place_obj["category"]
+    address = place_obj["address"]
+    detail_address = place_obj["detailAddress"]
+    address = place_obj["address"]
+    # images = place_obj["images"]
+
+    try :
+        url = CRUD_API_URL + "/api/place"
+        print(url, "in send_place_to_api")
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+        data = {
+            "placeName": place_name,
+            "category": category,
+            "address": address,
+            "detailAddress": detail_address,
+            "content": "",
+        }
+        response = requests.post(url, headers=headers, data=data, files=None)
+    except requests.exceptions.HTTPError as e:
+        print(f"Place 전송 중 오류 발생: {e}")
+        access_token = get_access_token()
+        return send_place_to_api(place_obj)
+    print(response , place_obj, "in send_place_to_api")
+    return response.json()
+
+def import_ndjson():
+    """변환된 장소 데이터를 NDJSON 파일에서 불러옵니다."""
+    place_obj_list = []
+    with open(DIRECTORY_PATH + "/tmp/place_obj_list_after_convert.ndjson", 'r', encoding='utf-8') as f:
+        for line in f:
+            place_obj = json.loads(line)
+            place_obj_list.append(place_obj)
+    return place_obj_list
+
+def task_to_send_place_to_api(ti=None, **context):
+    """변환된 장소 데이터를 Stroll API로 전송합니다."""
+    place_obj_list = import_ndjson()
+    success_count = 0
+    fail_count = 0
+    
+    for place_obj in place_obj_list:
+        try:
+            send_place_to_api(place_obj)
+            success_count += 1
+        except Exception as e:
+            print(f"장소 전송 실패: {place_obj.get('placeName', 'Unknown')} - {e}")
+            fail_count += 1
+    
+    print(f"API 전송 완료 - 성공: {success_count}, 실패: {fail_count}")
+    return {"success": success_count, "fail": fail_count}
