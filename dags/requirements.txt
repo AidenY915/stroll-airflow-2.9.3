@@ -1,0 +1,5 @@
+pymysql>=1.1.0
+selenium>=4.0.0
+python-dotenv>=1.0.0
+langchain-openai>=0.3.7
+langchain==0.3.2

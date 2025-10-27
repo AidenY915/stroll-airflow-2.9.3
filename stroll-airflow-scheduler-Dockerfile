@@ -31,7 +31,9 @@ RUN pip install --no-cache-dir \
       pymysql \
       requests \
       python-dotenv \
-      psycopg2-binary
+      psycopg2-binary \
+      langchain_openai==0.3.7 \
+      langchain==0.3.2
 
 # 작업 디렉터리
 WORKDIR /opt/airflow

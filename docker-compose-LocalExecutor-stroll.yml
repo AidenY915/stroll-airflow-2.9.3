@@ -14,7 +14,7 @@ services:
 
   # 1회성 DB 초기화 잡
   airflow-init:
-    image: stroll-airflow
+    image: stroll-airflow-scheduler
     depends_on: [postgres]
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -31,7 +31,7 @@ services:
       - stroll-network
 
   scheduler:
-    image: stroll-airflow
+    image: stroll-airflow-scheduler
     depends_on: [postgres]
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -52,7 +52,7 @@ services:
       - stroll-network
 
   webserver:
-    image: stroll-airflow
+    image: stroll-airflow-scheduler
     depends_on: [scheduler]
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}

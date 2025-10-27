@@ -41,7 +41,7 @@ with DAG(
         }
         
         print(f"\n{'='*50}")
-        print(f"📦 크롤링 완료 및 Dataset 업데이트")
+        print(f"크롤링 완료 및 Dataset 업데이트")
         print(f"{'='*50}")
         print(f"총 크롤링: {stats['total_crawled']}개 장소")
         print(f"저장 위치: dags/stroll/crawl/tmp/place_obj_list.ndjson")

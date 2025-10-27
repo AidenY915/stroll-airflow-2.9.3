@@ -39,3 +39,11 @@ dags/stroll/crawl/tmp/*
 
 dags/stroll/crawl/chrome/**
 !dags/stroll/crawl/chrome/.gitkeep
+
+dags/stroll_review_crawling/chrome/*
+!dags/stroll_review_crawling/chrome/.gitkeep
+
+dags/.env
+dags/tmp/*
+!dags/tmp/.gitkeep
+
